@@ -147,37 +147,21 @@ function generateTorrentId() {
 
 // Function to organize downloaded content
 function organizeDownloadedContent(torrent) {
-    // Updated folder paths to include /Plex
-    const moviesFolderPath = '/Plex/movies';
-    const tvShowsFolderPath = '/Plex/tvshows';
+    const moviesFolderPath = '/mnt/plex_rclone_mount/movies'; // Updated path
+
+    const tvShowsFolderPath = '/mnt/plex_rclone_mount/tvshows'; // Updated path
 
     ensureDirectoryExists(moviesFolderPath);
     ensureDirectoryExists(tvShowsFolderPath);
 
     const videoFiles = torrent.files.filter(file => isVideoFile(file.name));
-
+  
     if (videoFiles.length === 1) {
+        // Use the full path for the source file
         moveFileToFolder(torrent.path, videoFiles[0], moviesFolderPath);
     } else if (videoFiles.length > 1) {
-        moveTVShowContent(torrent, tvShowsFolderPath);
+        moveFolderToFolder(torrent.path, tvShowsFolderPath);
     }
-}
-
-function moveTVShowContent(torrent, tvShowsFolderPath) {
-    const torrentFolderPath = path.join('./downloads', torrent.name);
-    torrent.files.forEach(file => {
-        if (isVideoFile(file.name)) {
-            const fullPath = path.join(torrentFolderPath, file.path);
-            const destinationPath = path.join(tvShowsFolderPath, torrent.name, file.path);
-            ensureDirectoryExists(path.dirname(destinationPath));
-            if (fs.existsSync(fullPath)) {
-                fs.renameSync(fullPath, destinationPath);
-                console.log(`Moved TV show file: ${file.path} to ${destinationPath}`);
-            } else {
-                console.log(`File not found: ${fullPath}`);
-            }
-        }
-    });
 }
 
 function isVideoFile(fileName) {
@@ -187,6 +171,7 @@ function isVideoFile(fileName) {
 }
 
 function moveFileToFolder(torrentPath, file, folderPath) {
+    // Construct the full path for the source file
     const sourcePath = path.join(torrentPath, file.path);
     const destPath = path.join(folderPath, file.name);
     if (fs.existsSync(sourcePath)) {
@@ -197,8 +182,15 @@ function moveFileToFolder(torrentPath, file, folderPath) {
     }
 }
 
+function moveFolderToFolder(sourceFolderPath, destFolderPath) {
+    fs.renameSync(sourceFolderPath, path.join(destFolderPath, path.basename(sourceFolderPath)));
+    console.log(`Moved folder: ${sourceFolderPath} to ${destFolderPath}`);
+}
+
 function ensureDirectoryExists(path) {
     if (!fs.existsSync(path)) {
-        fs.mkdirSync(path, { recursive: true });
+        fs.mkdirSync(path);
     }
 }
+
+// Add any other required functions or logic here
